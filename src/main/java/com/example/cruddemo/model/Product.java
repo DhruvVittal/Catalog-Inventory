@@ -14,9 +14,14 @@ public class Product {
     private String name;
     private double price;
     private int quantity;
+    private long rating;
 
     public Long getId() {
         return id;
+    }
+
+    public long getRating(){
+        return rating;
     }
 
     public void setId(Long id) {
@@ -45,5 +50,9 @@ public class Product {
 
     public void setQuantity(int quantity) {
         this.quantity = quantity;
+    }
+
+    public void setRating(long rating) {
+        this.rating=rating;
     }
 }

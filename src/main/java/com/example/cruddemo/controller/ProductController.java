@@ -2,9 +2,10 @@ package com.example.cruddemo.controller;
 
 import com.example.cruddemo.model.Product;
 import com.example.cruddemo.repository.ProductRepository;
+import com.example.cruddemo.service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -16,6 +17,9 @@ public class ProductController {
 
     @Autowired
     private ProductRepository productRepository;
+
+    @Autowired
+    private ProductService productService;
 
     @PostMapping
     public Product createProduct(@RequestBody Product product) {
@@ -65,33 +69,18 @@ public class ProductController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Product> getProductById(@PathVariable Long id) {
-        Product product = findProductOrThrow(id);
-        return ResponseEntity.ok(product);
+        return ResponseEntity.ok(productService.getProductById(id));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Product> updateProduct(@PathVariable Long id, @RequestBody Product productDetails) {
-        Product product = findProductOrThrow(id);
-
-        product.setName(productDetails.getName());
-        product.setPrice(productDetails.getPrice());
-        product.setQuantity(productDetails.getQuantity());
-
-        Product updatedProduct = productRepository.save(product);
+        Product updatedProduct = productService.updateProduct(id, productDetails);
         return ResponseEntity.ok(updatedProduct);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteProduct(@PathVariable Long id) {
-        Product product = findProductOrThrow(id);
-
-        productRepository.delete(product);
+        productService.deleteProduct(id);
         return ResponseEntity.ok("Product deleted successfully with id: " + id);
-    }
-
-    private Product findProductOrThrow(Long id) {
-        return productRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Product not found with id: " + id));
     }
 }
