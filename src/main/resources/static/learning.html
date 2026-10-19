@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#050505">
+  <title>Learn OOP &amp; LLD · Catalog Inventory</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="space-backdrop" aria-hidden="true"><span class="star-layer star-layer-one"></span><span class="star-layer star-layer-two"></span></div>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Catalog Inventory home">
+        <span class="brand-mark" aria-hidden="true">▦</span>
+        <span class="brand-name">Catalog Inventory</span>
+        <span class="brand-credit">Built by <strong>DhruvVittal</strong></span>
+      </a>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a class="nav-link" href="/">Catalog</a>
+        <a class="nav-link active" href="/learning.html">Learn OOP &amp; LLD</a>
+      </nav>
+      <div class="topbar-right"><span class="workspace-label">LEARNING <strong>GUIDE</strong></span></div>
+    </header>
+    <main class="learning-main">
+      <section class="learning-hero">
+        <div class="eyebrow"><span></span> BUILDING BLOCKS · IN THIS PROJECT</div>
+        <h1>Learn by following the request<span class="title-period">.</span></h1>
+        <p class="page-subtitle">Use the catalog to connect object-oriented programming, layered design, and pagination to working code.</p>
+      </section>
+
+      <section class="learning-section" aria-labelledby="flow-title">
+        <div class="section-kicker">01 · THE REQUEST PATH</div>
+        <h2 id="flow-title">One request, one clear route</h2>
+        <div class="flow-row" aria-label="Request flow">
+          <div class="flow-step"><span>01</span><strong>Browser</strong><small>GET /api/products/page</small></div>
+          <span class="flow-arrow" aria-hidden="true">→</span>
+          <div class="flow-step"><span>02</span><strong>Controller</strong><small>Validates page inputs</small></div>
+          <span class="flow-arrow" aria-hidden="true">→</span>
+          <div class="flow-step"><span>03</span><strong>Service</strong><small>Chooses the query</small></div>
+          <span class="flow-arrow" aria-hidden="true">→</span>
+          <div class="flow-step"><span>04</span><strong>Repository</strong><small>Runs paged database query</small></div>
+        </div>
+        <p class="learning-note">The response travels back with the requested products and page metadata: current page, page size, total product count, and number of pages.</p>
+      </section>
+
+      <section class="learning-section" aria-labelledby="oop-title">
+        <div class="section-kicker">02 · OBJECT-ORIENTED DESIGN</div>
+        <h2 id="oop-title">OOP concepts you can find in the code</h2>
+        <div class="concept-grid">
+          <article class="concept-card"><span class="concept-number">A</span><h3>Encapsulation</h3><p><code>Product</code> keeps its fields private and exposes getters and setters. Other code works with the product through that public interface.</p><a href="/">Open the catalog</a></article>
+          <article class="concept-card"><span class="concept-number">B</span><h3>Abstraction</h3><p><code>ProductRepository</code> describes data operations. The service can ask it to find products without knowing the SQL or database connection details.</p><a href="/">See the repository</a></article>
+          <article class="concept-card"><span class="concept-number">C</span><h3>Inheritance</h3><p><code>ProductRepository extends JpaRepository&lt;Product, Long&gt;</code>. It inherits standard save, delete, and lookup operations from Spring Data.</p><a href="/">Browse products</a></article>
+          <article class="concept-card"><span class="concept-number">D</span><h3>Polymorphism</h3><p>The service depends on the <code>ProductRepository</code> interface. Spring provides a generated implementation behind that interface at runtime.</p><a href="/">Trace a page request</a></article>
+          <article class="concept-card"><span class="concept-number">E</span><h3>Composition</h3><p><code>ProductService</code> has a <code>ProductRepository</code> field. The service is built from a collaborator rather than inheriting repository behavior.</p><a href="/">View inventory</a></article>
+          <article class="concept-card"><span class="concept-number">F</span><h3>Single responsibility</h3><p>The controller handles HTTP details, the service coordinates app behavior, and the repository handles persistence. Each layer has a focused job.</p><a href="/">Try the app</a></article>
+        </div>
+      </section>
+
+      <section class="learning-section" aria-labelledby="pagination-title">
+        <div class="section-kicker">03 · PAGINATION</div>
+        <h2 id="pagination-title">How the product pages work</h2>
+        <div class="pagination-explainer">
+          <div>
+            <p>The browser requests a slice instead of downloading the entire catalog. Page numbers in the API start at zero. With page size <code>10</code>, page <code>2</code> starts at offset <code>2 × 10 = 20</code>.</p>
+            <pre><code>GET /api/products/page?page=2&amp;size=10&amp;sortBy=name&amp;direction=asc</code></pre>
+            <p>The repository returns a Spring <code>Page&lt;Product&gt;</code>. The API wraps it in a small response object, and the browser enables or disables Previous and Next from the returned page counts.</p>
+          </div>
+          <aside class="learning-callout"><strong>Why paginate on the server?</strong><span>For a large catalog, loading every row wastes memory and network time. The database returns only the requested page and calculates the total count.</span></aside>
+        </div>
+      </section>
+
+      <section class="learning-section" aria-labelledby="practice-title">
+        <div class="section-kicker">04 · PRACTICE THE DESIGN</div>
+        <h2 id="practice-title">Good next exercises</h2>
+        <ol class="exercise-list">
+          <li><span>1</span><div><strong>Add a maximum page size</strong><p>Decide how large a page can be, validate it in the controller, and explain why the limit protects the service.</p></div></li>
+          <li><span>2</span><div><strong>Add a low-stock filter to the paged query</strong><p>Implement the repository query, add a service method, and let the controller translate URL parameters.</p></div></li>
+          <li><span>3</span><div><strong>Move request validation into a request DTO</strong><p>Compare validation at the web boundary with business rules in the service layer.</p></div></li>
+          <li><span>4</span><div><strong>Write a service unit test</strong><p>Mock the repository and verify the service requests the correct page and sorting behavior.</p></div></li>
+        </ol>
+      </section>
+      <footer class="page-footer"><span>CATALOG INVENTORY <span class="footer-dot">·</span> LEARNING GUIDE</span><a class="footer-link" href="/">Return to catalog →</a></footer>
+    </main>
+  </div>
+</body>
+</html>

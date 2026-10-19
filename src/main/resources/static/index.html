@@ -22,6 +22,10 @@
         <span class="brand-name">Catalog Inventory</span>
         <span class="brand-credit">Built by <strong>DhruvVittal</strong></span>
       </a>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a class="nav-link active" href="/">Catalog</a>
+        <a class="nav-link" href="/learning.html">Learn OOP &amp; LLD</a>
+      </nav>
       <div class="topbar-right">
         <span class="workspace-label">WORKSPACE <strong>PRODUCTS</strong></span>
         <span class="api-indicator" id="api-indicator"><i></i><span id="api-status">Connecting</span></span>
@@ -96,6 +100,15 @@
             <input id="search" type="search" placeholder="Search products..." autocomplete="off" aria-label="Search products">
             <kbd>⌘ K</kbd>
           </label>
+          <label class="sort-box">Sort by
+            <select id="sort-by" aria-label="Sort products">
+              <option value="id">Recently added</option>
+              <option value="name">Name</option>
+              <option value="price">Price</option>
+              <option value="quantity">Quantity</option>
+              <option value="rating">Rating</option>
+            </select>
+          </label>
         </div>
 
         <div class="table-wrap">
@@ -114,7 +127,20 @@
             </tbody>
           </table>
         </div>
-        <div class="table-footer"><span id="table-message">Your inventory at a glance</span><button class="text-button" id="refresh" type="button"><span aria-hidden="true">↻</span> Refresh</button></div>
+        <div class="table-footer">
+          <span id="table-message">Your inventory at a glance</span>
+          <div class="pagination" aria-label="Product pages">
+            <button class="page-button" id="previous-page" type="button" disabled>← Previous</button>
+            <span id="pagination-status">Page 1</span>
+            <button class="page-button" id="next-page" type="button" disabled>Next →</button>
+            <label class="page-size-label">Rows
+              <select id="page-size" aria-label="Products per page">
+                <option value="5">5</option><option value="10" selected>10</option><option value="20">20</option><option value="50">50</option>
+              </select>
+            </label>
+          </div>
+          <button class="text-button" id="refresh" type="button"><span aria-hidden="true">↻</span> Refresh</button>
+        </div>
       </section>
 
       <footer class="page-footer"><span>CATALOG INVENTORY <span class="footer-dot">·</span> PRODUCT MANAGEMENT</span><span>MONOCHROME INVENTORY SYSTEM</span></footer>

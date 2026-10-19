@@ -1,34 +1,74 @@
 package com.example.cruddemo.controller;
 
 import com.example.cruddemo.model.Product;
-import com.example.cruddemo.repository.ProductRepository;
 import com.example.cruddemo.service.ProductService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/products")
 public class ProductController {
 
-    @Autowired
-    private ProductRepository productRepository;
+    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of("id", "name", "price", "quantity", "rating");
 
-    @Autowired
-    private ProductService productService;
+    private final ProductService productService;
+
+    public ProductController(ProductService productService) {
+        this.productService = productService;
+    }
 
     @PostMapping
     public Product createProduct(@RequestBody Product product) {
-        return productRepository.save(product);
+        return productService.createProduct(product);
     }
 
     @GetMapping
     public List<Product> getAllProducts() {
-        return productRepository.findAll();
+        return productService.getAllProducts();
+    }
+
+    @GetMapping("/page")
+    public ProductPageResponse getProductsPage(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "desc") String direction,
+            @RequestParam(required = false) String name) {
+        if (page < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "page must be zero or greater");
+        }
+        if (size < 1 || size > 50) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "size must be between 1 and 50");
+        }
+        if (!ALLOWED_SORT_FIELDS.contains(sortBy)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "sortBy must be one of: id, name, price, quantity, rating");
+        }
+
+        Sort.Direction sortDirection;
+        try {
+            sortDirection = Sort.Direction.fromString(direction);
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "direction must be asc or desc");
+        }
+
+        Page<Product> result = productService.getProducts(
+                PageRequest.of(page, size, Sort.by(sortDirection, sortBy)), name);
+        return new ProductPageResponse(result.getContent(), result.getNumber(), result.getSize(),
+                result.getTotalElements(), result.getTotalPages());
+    }
+
+    @GetMapping("/summary")
+    public ProductService.InventorySummary getInventorySummary() {
+        return productService.getInventorySummary();
     }
 
     @GetMapping("/search")
@@ -36,7 +76,7 @@ public class ProductController {
         if (name.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name must not be blank");
         }
-        return productRepository.findByNameContainingIgnoreCase(name.trim());
+        return productService.searchProducts(name.trim());
     }
 
     @GetMapping("/price-range")
@@ -46,7 +86,7 @@ public class ProductController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "min must be non-negative and max must be greater than or equal to min");
         }
-        return productRepository.findByPriceBetween(min, max);
+        return productService.getProductsByPriceRange(min, max);
     }
 
     @GetMapping("/low-stock")
@@ -54,17 +94,17 @@ public class ProductController {
         if (threshold < 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "threshold must be non-negative");
         }
-        return productRepository.findByQuantityLessThanEqual(threshold);
+        return productService.getLowStockProducts(threshold);
     }
 
     @GetMapping("/in-stock")
     public List<Product> getInStockProducts() {
-        return productRepository.findByQuantityGreaterThan(0);
+        return productService.getInStockProducts();
     }
 
     @GetMapping("/count")
     public long getProductCount() {
-        return productRepository.count();
+        return productService.getProductCount();
     }
 
     @GetMapping("/{id}")
@@ -83,4 +123,7 @@ public class ProductController {
         productService.deleteProduct(id);
         return ResponseEntity.ok("Product deleted successfully with id: " + id);
     }
+
+    public record ProductPageResponse(List<Product> content, int page, int size,
+                                      long totalElements, int totalPages) {}
 }

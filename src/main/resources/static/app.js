@@ -12,6 +12,13 @@ const apiStatus = document.querySelector("#api-status");
 let products = [];
 let editingProductId = null;
 let toastTimer;
+let searchTimer;
+let loadSequence = 0;
+let currentPage = 0;
+let totalPages = 0;
+let totalElements = 0;
+let pageSize = 10;
+let inventorySummary = { totalProducts: 0, unitsInStock: 0, inventoryValue: 0, lowStockProducts: 0 };
 
 function setApiStatus(connected) {
   apiIndicator.classList.toggle("connected", connected);
@@ -53,28 +60,63 @@ async function apiRequest(url, options = {}) {
 }
 
 async function loadProducts() {
+  const requestSequence = ++loadSequence;
   rows.innerHTML = '<tr><td colspan="5" class="state-cell"><span class="loader"></span> Loading products…</td></tr>';
+  const parameters = new URLSearchParams({
+    page: String(currentPage),
+    size: String(pageSize),
+    sortBy: document.querySelector("#sort-by").value,
+    direction: "desc",
+  });
+  const query = searchInput.value.trim();
+  if (query) parameters.set("name", query);
   try {
-    products = await apiRequest(API_URL);
+    const [pageResult, summary] = await Promise.all([
+      apiRequest(`${API_URL}/page?${parameters}`),
+      apiRequest(`${API_URL}/summary`),
+    ]);
+    if (requestSequence !== loadSequence) return;
+    if (currentPage > 0 && currentPage >= pageResult.totalPages) {
+      currentPage = Math.max(0, pageResult.totalPages - 1);
+      return loadProducts();
+    }
+    products = pageResult.content;
+    totalPages = pageResult.totalPages;
+    totalElements = pageResult.totalElements;
+    inventorySummary = summary;
     setApiStatus(true);
     renderProducts();
   } catch (error) {
+    if (requestSequence !== loadSequence) return;
     products = [];
+    totalPages = 0;
+    totalElements = 0;
+    inventorySummary = { totalProducts: 0, unitsInStock: 0, inventoryValue: 0, lowStockProducts: 0 };
     setApiStatus(false);
     updateStats();
     rows.innerHTML = `<tr><td colspan="5" class="state-cell"><div class="empty-state"><span class="empty-icon">!</span><strong>Could not load products</strong><span>${escapeHtml(error.message)}. Check that the app is running, then refresh.</span></div></td></tr>`;
     document.querySelector("#visible-count").textContent = "0";
+    document.querySelector("#pagination-status").textContent = "Could not load pages";
+    document.querySelector("#previous-page").disabled = true;
+    document.querySelector("#next-page").disabled = true;
   }
 }
 
 function renderProducts() {
-  const query = searchInput.value.trim().toLowerCase();
-  const visibleProducts = products.filter((product) => (product.name || "").toLowerCase().includes(query));
-  document.querySelector("#visible-count").textContent = String(visibleProducts.length);
+  const visibleProducts = products;
+  document.querySelector("#visible-count").textContent = String(totalElements);
   updateStats();
+  document.querySelector("#pagination-status").textContent = totalPages === 0
+    ? "No pages"
+    : `Page ${currentPage + 1} of ${totalPages}`;
+  document.querySelector("#previous-page").disabled = currentPage === 0;
+  document.querySelector("#next-page").disabled = totalPages === 0 || currentPage >= totalPages - 1;
+  const firstItem = totalElements === 0 ? 0 : currentPage * pageSize + 1;
+  const lastItem = Math.min((currentPage + 1) * pageSize, totalElements);
+  document.querySelector("#table-message").textContent = `Showing ${firstItem}–${lastItem} of ${totalElements} products`;
 
   if (visibleProducts.length === 0) {
-    const isSearching = query.length > 0;
+    const isSearching = searchInput.value.trim().length > 0;
     rows.innerHTML = `<tr><td colspan="5" class="state-cell"><div class="empty-state"><span class="empty-icon">${isSearching ? "⌕" : "+"}</span><strong>${isSearching ? "No matching products" : "Your catalog is empty"}</strong><span>${isSearching ? "Try another search term." : "Add your first product to get started."}</span></div></td></tr>`;
     return;
   }
@@ -86,7 +128,7 @@ function renderProducts() {
     const initial = escapeHtml((product.name || "?").trim().charAt(0) || "?");
     return `
       <tr>
-        <td><div class="product-cell"><span class="product-avatar">${initial}</span><div><div class="product-name">${escapeHtml(product.name || "Unnamed product")}</div><div class="product-id">ID ${escapeHtml(product.id)}</div></div></div></td>
+        <td><a class="product-detail-link" href="/product.html?id=${encodeURIComponent(product.id)}"><div class="product-cell"><span class="product-avatar">${initial}</span><div><div class="product-name">${escapeHtml(product.name || "Unnamed product")}</div><div class="product-id">ID ${escapeHtml(product.id)} · View details</div></div></div></a></td>
         <td><span class="price-value">${formatNumber(product.price)}</span></td>
         <td><span class="stock-badge ${stockClass}">${stockLabel}</span></td>
         <td><span class="rating"><span class="rating-star">★</span>${escapeHtml(product.rating ?? 0)} / 5</span></td>
@@ -99,13 +141,10 @@ function renderProducts() {
 }
 
 function updateStats() {
-  const totalUnits = products.reduce((sum, product) => sum + (Number(product.quantity) || 0), 0);
-  const inventoryValue = products.reduce((sum, product) => sum + ((Number(product.price) || 0) * (Number(product.quantity) || 0)), 0);
-  const lowStockCount = products.filter((product) => (Number(product.quantity) || 0) <= 10).length;
-  document.querySelector("#total-products").textContent = String(products.length);
-  document.querySelector("#total-units").textContent = totalUnits.toLocaleString();
-  document.querySelector("#inventory-value").textContent = formatNumber(inventoryValue);
-  document.querySelector("#low-stock-count").textContent = String(lowStockCount);
+  document.querySelector("#total-products").textContent = String(inventorySummary.totalProducts);
+  document.querySelector("#total-units").textContent = Number(inventorySummary.unitsInStock).toLocaleString();
+  document.querySelector("#inventory-value").textContent = formatNumber(inventorySummary.inventoryValue);
+  document.querySelector("#low-stock-count").textContent = String(inventorySummary.lowStockProducts);
 }
 
 function formatNumber(value) {
@@ -147,7 +186,32 @@ function openEditDialog(product) {
 document.querySelector("#add-product").addEventListener("click", openCreateDialog);
 document.querySelectorAll(".close-dialog").forEach((button) => button.addEventListener("click", () => dialog.close()));
 document.querySelector("#refresh").addEventListener("click", loadProducts);
-searchInput.addEventListener("input", renderProducts);
+searchInput.addEventListener("input", () => {
+  window.clearTimeout(searchTimer);
+  currentPage = 0;
+  searchTimer = window.setTimeout(loadProducts, 250);
+});
+document.querySelector("#sort-by").addEventListener("change", () => {
+  currentPage = 0;
+  loadProducts();
+});
+document.querySelector("#page-size").addEventListener("change", (event) => {
+  pageSize = Number(event.target.value);
+  currentPage = 0;
+  loadProducts();
+});
+document.querySelector("#previous-page").addEventListener("click", () => {
+  if (currentPage > 0) {
+    currentPage -= 1;
+    loadProducts();
+  }
+});
+document.querySelector("#next-page").addEventListener("click", () => {
+  if (currentPage < totalPages - 1) {
+    currentPage += 1;
+    loadProducts();
+  }
+});
 
 document.querySelector("#product-rows").addEventListener("click", async (event) => {
   const button = event.target.closest("button[data-action]");

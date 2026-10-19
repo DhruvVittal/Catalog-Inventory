@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#050505">
+  <title>Product details · Catalog Inventory</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/product.js" defer></script>
+</head>
+<body>
+  <div class="space-backdrop" aria-hidden="true"><span class="star-layer star-layer-one"></span><span class="star-layer star-layer-two"></span></div>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Catalog Inventory home">
+        <span class="brand-mark" aria-hidden="true">▦</span>
+        <span class="brand-name">Catalog Inventory</span>
+        <span class="brand-credit">Built by <strong>DhruvVittal</strong></span>
+      </a>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a class="nav-link active" href="/">Catalog</a>
+        <a class="nav-link" href="/learning.html">Learn OOP &amp; LLD</a>
+      </nav>
+      <div class="topbar-right"><a class="nav-link back-link" href="/">← All products</a></div>
+    </header>
+    <main class="detail-main">
+      <a class="back-link detail-back" href="/">← Back to catalog</a>
+      <section class="detail-card" id="product-detail" aria-live="polite">
+        <div class="detail-loading"><span class="loader"></span> Loading product…</div>
+      </section>
+      <footer class="page-footer"><span>CATALOG INVENTORY <span class="footer-dot">·</span> PRODUCT DETAILS</span><a class="footer-link" href="/learning.html">Learn how the layers work →</a></footer>
+    </main>
+  </div>
+</body>
+</html>
